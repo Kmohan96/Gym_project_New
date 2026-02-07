@@ -138,23 +138,48 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 #     }
 # }
 
+import os
 
-DATABASES={
-    'default':{
-        'ENGINE':'django.db.backends.mysql',
-        'NAME':os.getenv('DB_NAME'),
-        'USER':os.getenv('DB_USER'),
-        'PASSWORD':os.getenv('DB_PASSWORD'),
-        'HOST':os.getenv('DB_HOST'),
-        'PORT':os.getenv('DB_PORT'),
-        'OPTIONS':{
-            "ssl":{
-                "ca": "/etc/secrets/aiven_ca.pem", 
-            },
-            'charset':'utf8mb4',
-            'init_command':"SET sql_mode='STRICT_TRANS_TABLES'",
+SSL_CA = os.getenv("MYSQL_SSL_CA")
+
+ssl_ca_path = None
+
+if SSL_CA:
+    ssl_ca_path = "/tmp/mysql-ca.pem"
+    with open(ssl_ca_path, "w") as f:
+        f.write(SSL_CA.replace("\\n", "\n"))
+
+# DATABASES={
+#     'default':{
+#         'ENGINE':'django.db.backends.mysql',
+#         'NAME':os.getenv('DB_NAME'),
+#         'USER':os.getenv('DB_USER'),
+#         'PASSWORD':os.getenv('DB_PASSWORD'),
+#         'HOST':os.getenv('DB_HOST'),
+#         'PORT':os.getenv('DB_PORT'),
+#         'OPTIONS':{
+#             "ssl":{
+#                 "ca": "/etc/secrets/aiven_ca.pem", 
+#             },
+#             'charset':'utf8mb4',
+#             'init_command':"SET sql_mode='STRICT_TRANS_TABLES'",
             
-        },
+#         },
+#     }
+# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': '3306',
+        'OPTIONS': (
+            {'ssl': {'ca': ssl_ca_path}}
+            if ssl_ca_path else
+            {'ssl': False}
+        )
     }
 }
 
