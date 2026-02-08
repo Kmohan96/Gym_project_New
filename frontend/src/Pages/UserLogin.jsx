@@ -7,31 +7,38 @@ import "../Styles/Layouts.css";
 function UserLogin() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false); // ✅ loading state
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setLoading(true); // ✅ start buffering
+    setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("username", username);
-      formData.append("password", password);
+      // 🔐 JWT login (JSON)
+      const res = await api.post("/api/token/", {
+        username,
+        password,
+      });
 
-      const res = await api.post("api/accounts/login/", formData);
+      // ✅ store JWT
+      localStorage.setItem("access", res.data.access);
+      localStorage.setItem("refresh", res.data.refresh);
 
-      if (!res.data.approved) {
-        alert(res.data.message);
+      // 🔹 optional: check approval via profile API
+      const profile = await api.get("/api/accounts/profile/");
+
+      if (!profile.data.approved) {
+        alert("Your account is not approved yet");
+        localStorage.clear();
         return;
       }
 
-      // save username for dashboard
-      localStorage.setItem("username", res.data.username);
+      // ✅ redirect
       window.location.href = "/user-dashboard";
     } catch (err) {
-      alert("Login failed");
+      alert("Invalid username or password");
     } finally {
-      setLoading(false); // ✅ stop buffering
+      setLoading(false);
     }
   };
 
@@ -49,7 +56,7 @@ function UserLogin() {
           border: "2px solid #1d2671",
           borderRadius: "12px",
           padding: "20px",
-          minHeight: "300px"
+          minHeight: "300px",
         }}
       >
         <form onSubmit={handleLogin}>
@@ -74,7 +81,6 @@ function UserLogin() {
             {loading ? "Logging in..." : "Login"}
           </button>
 
-          {/* ✅ Optional spinner */}
           {loading && <div className="spinner"></div>}
         </form>
       </div>

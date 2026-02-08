@@ -13,7 +13,7 @@ function Register() {
     gym_type: "",
   });
 
-  const [loading, setLoading] = useState(false); // ✅ loading state
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -22,13 +22,13 @@ function Register() {
   const handleRegister = async (e) => {
     e.preventDefault();
 
-    // ✅ FORM VALIDATIONS
+    // ✅ Validations
     if (form.username.trim().length < 3) {
       alert("Username must be at least 3 characters");
       return;
     }
 
-    if (form.password.length < 1) {
+    if (form.password.length < 6) {
       alert("Password must be at least 6 characters");
       return;
     }
@@ -53,21 +53,18 @@ function Register() {
       return;
     }
 
-    setLoading(true); // ✅ start buffering
+    setLoading(true);
 
     try {
-      const formData = new FormData();
-      Object.keys(form).forEach((key) => {
-        formData.append(key, form[key]);
-      });
+      const res = await api.post("/api/accounts/register/", form);
 
-      const res = await api.post("api/accounts/register/", formData);
-      alert(res.data.message);
+      alert("Registration successful. Please login.");
       window.location.href = "/login";
     } catch (err) {
+      console.error(err.response?.data);
       alert("Registration failed");
     } finally {
-      setLoading(false); // ✅ stop buffering
+      setLoading(false);
     }
   };
 
@@ -77,81 +74,29 @@ function Register() {
         <h2>User Register</h2>
 
         <form onSubmit={handleRegister}>
-          <input
-            name="username"
-            placeholder="Username"
-            onChange={handleChange}
-            disabled={loading}
-            required
-          />
+          <input name="username" placeholder="Username" onChange={handleChange} disabled={loading} required />
+          <input name="password" type="password" placeholder="Password" onChange={handleChange} disabled={loading} required />
+          <input name="age" type="number" placeholder="Age" onChange={handleChange} disabled={loading} required />
+          <input name="height" type="number" placeholder="Height (cm)" onChange={handleChange} disabled={loading} required />
+          <input name="weight" type="number" placeholder="Weight (kg)" onChange={handleChange} disabled={loading} required />
 
-          <input
-            name="password"
-            type="password"
-            placeholder="please give username as a password"
-            onChange={handleChange}
-            disabled={loading}
-            required
-          />
-
-          <input
-            name="age"
-            type="number"
-            placeholder="Age"
-            onChange={handleChange}
-            disabled={loading}
-            required
-          />
-
-          <input
-            name="height"
-            type="number"
-            placeholder="Height (cm)"
-            onChange={handleChange}
-            disabled={loading}
-            required
-          />
-
-          <input
-            name="weight"
-            type="number"
-            placeholder="Weight (kg)"
-            onChange={handleChange}
-            disabled={loading}
-            required
-          />
-
-          <select
-            name="goal"
-            onChange={handleChange}
-            disabled={loading}
-          >
+          <select name="goal" onChange={handleChange} disabled={loading}>
             <option value="weight_loss">Weight Loss</option>
             <option value="muscle_gain">Muscle Gain</option>
             <option value="fitness">General Fitness</option>
           </select>
 
-          <input
-            name="gym_type"
-            placeholder="Gym Type"
-            onChange={handleChange}
-            disabled={loading}
-            required
-          />
+          <input name="gym_type" placeholder="Gym Type" onChange={handleChange} disabled={loading} required />
 
           <button type="submit" disabled={loading}>
             {loading ? "Registering..." : "Register"}
           </button>
 
-          {/* ✅ Optional spinner */}
           {loading && <div className="spinner"></div>}
 
           <p className="auth-switch">
             Already registered?{" "}
-            <span
-              className="auth-link"
-              onClick={() => (window.location.href = "/login")}
-            >
+            <span className="auth-link" onClick={() => (window.location.href = "/login")}>
               Login
             </span>
           </p>

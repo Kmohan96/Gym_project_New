@@ -50,10 +50,10 @@ INSTALLED_APPS = [
    
 
 ]
-# ===== CORS & CSRF CONFIG (FINAL) =====
+# ===== CORS & CSRF (FINAL, CORRECT) =====
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"",
+    r"^https://.*\.vercel\.app$",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -67,7 +67,6 @@ SESSION_COOKIE_SECURE = True
 
 CSRF_COOKIE_SAMESITE = "None"
 CSRF_COOKIE_SECURE = True
-
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG") == "True"
@@ -108,7 +107,15 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 
-# PEM_CONTENT = os.getenv("PEM_CONT")
+# SSL_CA = os.getenv("MYSQL_SSL_CA")
+# ssl_ca_path = None
+
+# if SSL_CA:
+#     ssl_ca_path = "/tmp/mysql-ca.pem"
+#     if not os.path.exists(ssl_ca_path):
+#         with open(ssl_ca_path, "w") as f:
+#             f.write(SSL_CA.replace("\\n", "\n"))
+
 
 # CERT_PATH = os.path.join(BASE_DIR, "aiven_ca.pem")
 
@@ -117,24 +124,7 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 #         f.write(PEM_CONTENT)
 
 
-# DATABASES={
-#     'default':{
-#         'ENGINE':'django.db.backends.mysql',
-#         'NAME':os.getenv('DB_NAME'),
-#         'USER':os.getenv('DB_USER'),
-#         'PASSWORD':os.getenv('DB_PASSWORD'),
-#         'HOST':os.getenv('DB_HOST'),
-#         'PORT':os.getenv('DB_PORT'),
-#         'OPTIONS':{
-#             "ssl":{
-#                 "ca": os.getenv("PEM_CONTENT"),
-#             },
-#             'charset':'utf8mb4',
-#             'init_command':"SET sql_mode='STRICT_TRANS_TABLES'",
-            
-#         },
-#     }
-# }
+#aiven_original
 
 import os
 
@@ -146,6 +136,23 @@ if SSL_CA:
     ssl_ca_path = "/tmp/mysql-ca.pem"
     with open(ssl_ca_path, "w") as f:
         f.write(SSL_CA.replace("\\n", "\n"))
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT', '3306'),
+        'OPTIONS': (
+            {'ssl': {'ca': ssl_ca_path}}
+            if ssl_ca_path else
+            {'ssl': False}
+        ),
+    }
+}
+# aiven_original
 
 # DATABASES={
 #     'default':{
@@ -165,22 +172,60 @@ if SSL_CA:
 #         },
 #     }
 # }
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': '3306',
-        'OPTIONS': (
-            {'ssl': {'ca': ssl_ca_path}}
-            if ssl_ca_path else
-            {'ssl': False}
-        )
-    }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': os.getenv('DB_NAME'),
+#         'USER': os.getenv('DB_USER'),
+#         'PASSWORD': os.getenv('DB_PASSWORD'),
+#         'HOST': os.getenv('DB_HOST'),
+#         'PORT': '3306',
+#         'OPTIONS': (
+#             {'ssl': {'ca': ssl_ca_path}}
+#             if ssl_ca_path else
+#             {'ssl': False}
+#         )
+#     }
+# }
+
+# ----------------------
+
+from datetime import timedelta
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
 }
 
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
+# --------------
+# import os
+# from pathlib import Path
+
+# BASE_DIR = Path(__file__).resolve().parent.parent
+# SSL_CA_FILE = BASE_DIR / "aiven_ca.pem"
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.mysql",
+#         "NAME": os.getenv("DB_NAME"),
+#         "USER": os.getenv("DB_USER"),
+#         "PASSWORD": os.getenv("DB_PASSWORD"),
+#         "HOST": os.getenv("DB_HOST"),
+#         "PORT": os.getenv("DB_PORT", "3306"),
+#         "OPTIONS": {
+#             "ssl": {
+#                 "ca": SSL_CA_FILE
+#             }
+#         },
+#     }
+# }
+# ------------------------local
 
 
 # Password validation

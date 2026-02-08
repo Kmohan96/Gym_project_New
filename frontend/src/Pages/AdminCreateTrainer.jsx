@@ -7,18 +7,18 @@ function AdminCreateTrainer() {
   const [selectedUser, setSelectedUser] = useState("");
   const [trainerId, setTrainerId] = useState("");
 
-  // 🔹 Load admin-created users (GET API)
+  // 🔹 Load users created by admin
   useEffect(() => {
-    const fetchAdminUsers = async () => {
+    const fetchUsers = async () => {
       try {
-        const res = await api.get("/api/accounts/register/");
+        const res = await api.get("/api/accounts/users/");
         setUsers(res.data.users);
       } catch (err) {
-        alert("Failed to load admin users");
+        alert("Failed to load users");
       }
     };
 
-    fetchAdminUsers();
+    fetchUsers();
   }, []);
 
   // 🔹 Create trainer
@@ -30,16 +30,18 @@ function AdminCreateTrainer() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("username", selectedUser);
-    formData.append("trainer_id", trainerId);
+    try {
+      const res = await api.post("/api/accounts/trainer/create/", {
+        username: selectedUser,
+        trainer_id: trainerId,
+      });
 
-    const res = await api.post(
-      "/api/accounts/trainer/create/",
-      formData
-    );
-
-    alert(res.data.message);
+      alert(res.data.message);
+      setTrainerId("");
+      setSelectedUser("");
+    } catch (err) {
+      alert("Trainer creation failed");
+    }
   };
 
   return (
@@ -52,7 +54,7 @@ function AdminCreateTrainer() {
           value={selectedUser}
           onChange={(e) => setSelectedUser(e.target.value)}
         >
-          <option value="">Select Admin User</option>
+          <option value="">Select User</option>
           {users.map((u, index) => (
             <option key={index} value={u.username}>
               {u.username}
@@ -62,6 +64,7 @@ function AdminCreateTrainer() {
 
         <input
           placeholder="Trainer ID (T001)"
+          value={trainerId}
           onChange={(e) => setTrainerId(e.target.value)}
         />
 

@@ -3,32 +3,36 @@ import api from "../Api/Axios";
 import "../Styles/TrainerLogin.css";
 
 function TrainerLogin() {
-  const [trainerId, setTrainerId] = useState("");
+  const [username, setUsername] = useState(""); // trainer username
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false); // ✅ loading state
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (!trainerId || !password) {
-      alert("Trainer ID and Password required");
+    if (!username || !password) {
+      alert("Username and Password required");
       return;
     }
 
-    setLoading(true); // ✅ start buffering
-
-    const formData = new FormData();
-    formData.append("trainer_id", trainerId);
-    formData.append("password", password);
+    setLoading(true);
 
     try {
-      const res = await api.post("/api/accounts/trainer/login/", formData);
-      localStorage.setItem("trainer_id", res.data.trainer_id);
+      const res = await api.post("/api/token/", {
+        username,
+        password,
+      });
+
+      // ✅ store JWT
+      localStorage.setItem("access", res.data.access);
+      localStorage.setItem("refresh", res.data.refresh);
+
+      // ✅ redirect
       window.location.href = "/trainer-dashboard";
-    } catch {
+    } catch (err) {
       alert("Trainer login failed");
     } finally {
-      setLoading(false); // ✅ stop buffering
+      setLoading(false);
     }
   };
 
@@ -39,9 +43,9 @@ function TrainerLogin() {
 
         <form onSubmit={handleLogin}>
           <input
-            placeholder="Trainer ID"
-            value={trainerId}
-            onChange={(e) => setTrainerId(e.target.value)}
+            placeholder="Trainer Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             disabled={loading}
           />
 
@@ -57,7 +61,6 @@ function TrainerLogin() {
             {loading ? "Logging in..." : "Login"}
           </button>
 
-          {/* ✅ Optional spinner */}
           {loading && <div className="spinner"></div>}
         </form>
       </div>

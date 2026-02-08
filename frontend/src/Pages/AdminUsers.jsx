@@ -8,15 +8,17 @@ function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [trainerData, setTrainerData] = useState({});
 
+  // 🔹 Load users
   useEffect(() => {
     api.get("/api/admin/users/")
       .then(res => setUsers(res.data.users))
       .catch(() => alert("Failed to load users"));
   }, []);
 
+  // 🔹 Approve user (POST, not GET)
   const approveUser = async (id) => {
     try {
-      await api.get(`/api/admin/users/approve/${id}/`);
+      await api.post("/api/admin/users/approve/", { user_id: id });
       alert("User approved");
 
       const updated = await api.get("/api/admin/users/");
@@ -26,18 +28,18 @@ function AdminUsers() {
     }
   };
 
-  // 🔹 handle input change per user
+  // 🔹 Handle trainer form input
   const handleTrainerChange = (userId, field, value) => {
-    setTrainerData({
-      ...trainerData,
+    setTrainerData(prev => ({
+      ...prev,
       [userId]: {
-        ...trainerData[userId],
+        ...prev[userId],
         [field]: value
       }
-    });
+    }));
   };
 
-  // 🔹 create trainer for specific user
+  // 🔹 Create trainer (JSON, JWT-safe)
   const createTrainer = async (user) => {
     const data = trainerData[user.id];
 
@@ -46,16 +48,13 @@ function AdminUsers() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("username", user.username);
-    formData.append("password", data.password);
-    formData.append("trainer_id", data.trainer_id);
-
     try {
-      const res = await api.post(
-        "/api/accounts/trainer/create/",
-        formData
-      );
+      const res = await api.post("/api/accounts/trainer/create/", {
+        username: user.username,
+        password: data.password,
+        trainer_id: data.trainer_id,
+      });
+
       alert(res.data.message);
     } catch {
       alert("Trainer creation failed");
@@ -100,36 +99,25 @@ function AdminUsers() {
                     )}
                   </td>
 
-                  {/* Trainer ID input */}
                   <td>
                     <input
                       placeholder="T001"
                       onChange={(e) =>
-                        handleTrainerChange(
-                          user.id,
-                          "trainer_id",
-                          e.target.value
-                        )
+                        handleTrainerChange(user.id, "trainer_id", e.target.value)
                       }
                     />
                   </td>
 
-                  {/* Trainer Password input */}
                   <td>
                     <input
                       type="password"
                       placeholder="Password"
                       onChange={(e) =>
-                        handleTrainerChange(
-                          user.id,
-                          "password",
-                          e.target.value
-                        )
+                        handleTrainerChange(user.id, "password", e.target.value)
                       }
                     />
                   </td>
 
-                  {/* Create Trainer button */}
                   <td>
                     <button onClick={() => createTrainer(user)}>
                       Create Trainer
@@ -139,7 +127,6 @@ function AdminUsers() {
               ))}
             </tbody>
           </table>
-
         </div>
       </div>
 

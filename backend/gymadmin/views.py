@@ -65,3 +65,14 @@ def approve_user(request, profile_id):
     except UserProfile.DoesNotExist:
         return JsonResponse({"error": "User not found"}, status=404)
     
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+class AdminDashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response({
+            "admin": request.user.username
+        })

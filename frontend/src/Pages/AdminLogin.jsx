@@ -5,25 +5,28 @@ import "../Styles/Auth.css";
 function AdminLogin() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false); // ✅ loading state
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setLoading(true); // ✅ start buffering
+    setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("username", username);
-      formData.append("password", password);
+      const res = await api.post("/api/token/", {
+        username,
+        password,
+      });
 
-      const res = await api.post("/api/admin/login/", formData);
+      // ✅ SAVE JWT
+      localStorage.setItem("access", res.data.access);
+      localStorage.setItem("refresh", res.data.refresh);
 
-      alert(res.data.message);
+      // ✅ redirect
       window.location.href = "/admin-dashboard";
     } catch (err) {
-      alert("Login failed");
+      alert("Invalid username or password");
     } finally {
-      setLoading(false); // ✅ stop buffering
+      setLoading(false);
     }
   };
 
@@ -52,7 +55,6 @@ function AdminLogin() {
             {loading ? "Logging in..." : "Login"}
           </button>
 
-          {/* ✅ Optional spinner */}
           {loading && <div className="spinner"></div>}
         </form>
       </div>
