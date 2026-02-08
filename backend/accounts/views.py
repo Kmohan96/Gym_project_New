@@ -64,7 +64,13 @@ class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        profile = UserProfile.objects.get(user=request.user)
+        try:
+            profile = UserProfile.objects.get(user=request.user)
+        except UserProfile.DoesNotExist:
+            return Response(
+                {"error": "Profile not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         return Response({
             "username": request.user.username,
@@ -81,6 +87,13 @@ class CreateTrainerView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        # 🔒 Admin-only
+        if not request.user.is_superuser:
+            return Response(
+                {"error": "Admin access required"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         username = request.data.get("username")
         password = request.data.get("password")
         trainer_id = request.data.get("trainer_id")
@@ -100,6 +113,7 @@ class CreateTrainerView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        # reset password
         user.set_password(password)
         user.save()
 
@@ -125,7 +139,13 @@ class TrainerUsersView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        trainer = Trainer.objects.get(user=request.user)
+        try:
+            trainer = Trainer.objects.get(user=request.user)
+        except Trainer.DoesNotExist:
+            return Response(
+                {"error": "You are not a trainer"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         profiles = UserProfile.objects.filter(trainer=trainer, approved=True)
 
@@ -148,7 +168,13 @@ class AddDailyUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        trainer = Trainer.objects.get(user=request.user)
+        try:
+            trainer = Trainer.objects.get(user=request.user)
+        except Trainer.DoesNotExist:
+            return Response(
+                {"error": "You are not a trainer"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         username = request.data.get("username")
         date = request.data.get("date")
@@ -156,7 +182,13 @@ class AddDailyUpdateView(APIView):
         attendance = request.data.get("attendance")
         description = request.data.get("description")
 
-        user = User.objects.get(username=username)
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return Response(
+                {"error": "User not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         DailyUpdate.objects.create(
             trainer=trainer,

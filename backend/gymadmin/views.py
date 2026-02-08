@@ -1,4 +1,3 @@
-from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -68,13 +67,21 @@ class ApproveUserView(APIView):
 
         profile_id = request.data.get("user_id")
 
+        if not profile_id:
+            return Response(
+                {"error": "user_id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         try:
             profile = UserProfile.objects.get(id=profile_id)
-            profile.approved = True
-            profile.save()
-            return Response({"message": "User approved"})
         except UserProfile.DoesNotExist:
             return Response(
                 {"error": "User not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+        profile.approved = True
+        profile.save()
+
+        return Response({"message": "User approved"})
