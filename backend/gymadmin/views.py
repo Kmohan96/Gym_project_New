@@ -1,78 +1,80 @@
-from django.contrib.auth import authenticate, login
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from accounts.models import UserProfile
-
-
-# ---------------- ADMIN LOGIN ----------------
-@csrf_exempt
-def admin_login(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Method not allowed"}, status=405)
-
-    username = request.POST.get("username")
-    password = request.POST.get("password")
-
-    print("Admin login attempt:", username)
-
-    user = authenticate(username=username, password=password)
-
-    if user is None:
-        return JsonResponse({"error": "Invalid credentials"}, status=401)
-
-    if not user.is_superuser:
-        return JsonResponse({"error": "Not an admin"}, status=403)
-
-    login(request, user)
-
-    return JsonResponse({
-        "message": "Admin login successful",
-        "admin": user.username
-    })
-
-
-# ---------------- ADMIN DASHBOARD ----------------
-def admin_dashboard(request):
-    return JsonResponse({
-        "message": "Welcome Admin"
-    })
-
-
-# ---------------- LIST USERS ----------------
-def admin_users(request):
-    profiles = UserProfile.objects.select_related("user").all()
-
-    users = []
-    for profile in profiles:
-        users.append({
-            "id": profile.id,
-            "username": profile.user.username,
-            "goal": profile.goal,
-            "approved": profile.approved,
-        })
-
-    return JsonResponse({"users": users})
-
-
-# ---------------- APPROVE USER (NO CSRF, NO POST) ----------------
-def approve_user(request, profile_id):
-    try:
-        profile = UserProfile.objects.get(id=profile_id)
-        profile.approved = True
-        profile.save()
-
-        return JsonResponse({"message": "User approved"})
-    except UserProfile.DoesNotExist:
-        return JsonResponse({"error": "User not found"}, status=404)
-    
+from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework import status
 
+from accounts.models import UserProfile
+
+
+# =========================
+# ADMIN DASHBOARD
+# =========================
 class AdminDashboardView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        if not request.user.is_superuser:
+            return Response(
+                {"error": "Not an admin"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         return Response({
             "admin": request.user.username
         })
+
+
+# =========================
+# LIST ALL USERS
+# =========================
+class AdminUsersView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.is_superuser:
+            return Response(
+                {"error": "Not an admin"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        profiles = UserProfile.objects.select_related("user").all()
+
+        users = [
+            {
+                "id": profile.id,
+                "username": profile.user.username,
+                "goal": profile.goal,
+                "approved": profile.approved,
+            }
+            for profile in profiles
+        ]
+
+        return Response({"users": users})
+
+
+# =========================
+# APPROVE USER
+# =========================
+class ApproveUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if not request.user.is_superuser:
+            return Response(
+                {"error": "Not an admin"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        profile_id = request.data.get("user_id")
+
+        try:
+            profile = UserProfile.objects.get(id=profile_id)
+            profile.approved = True
+            profile.save()
+            return Response({"message": "User approved"})
+        except UserProfile.DoesNotExist:
+            return Response(
+                {"error": "User not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )

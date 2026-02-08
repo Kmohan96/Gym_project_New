@@ -1,295 +1,202 @@
 from django.contrib.auth.models import User
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from .models import UserProfile
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework import status
+
+from .models import UserProfile, Trainer, DailyUpdate
 
 
-@csrf_exempt
-def register_user(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Method not allowed"}, status=405)
+# =========================
+# USER REGISTRATION
+# =========================
+class RegisterUserView(APIView):
+    permission_classes = [AllowAny]
 
-    username = request.POST.get("username")
-    password = request.POST.get("password")
-    age = request.POST.get("age")
-    goal = request.POST.get("goal")
+    def post(self, request):
+        data = request.data
 
-    if User.objects.filter(username=username).exists():
-        return JsonResponse({"error": "Username already exists"}, status=400)
+        username = data.get("username")
+        password = data.get("password")
+        age = data.get("age")
+        height = data.get("height")
+        weight = data.get("weight")
+        goal = data.get("goal")
+        gym_type = data.get("gym_type")
 
-    user = User.objects.create_user(
-        username=username,
-        password=password
-    )
+        if not username or not password:
+            return Response(
+                {"error": "Username and password required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-    UserProfile.objects.create(
-        user=user,
-        age=age,
-        goal=goal,
-        approved=False
-    )
+        if User.objects.filter(username=username).exists():
+            return Response(
+                {"error": "Username already exists"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-    return JsonResponse(
-        {"message": "User registered successfully. Waiting for admin approval."},
-        status=201
-    )
+        user = User.objects.create_user(
+            username=username,
+            password=password
+        )
 
-    # Create UserProfile
-    UserProfile.objects.create(
-        user=user,
-        age=age,
-        height=height,
-        weight=weight,
-        goal=goal,
-        gym_type=gym_type,
-        approved=False
-    )
+        UserProfile.objects.create(
+            user=user,
+            age=age,
+            height=height,
+            weight=weight,
+            goal=goal,
+            gym_type=gym_type,
+            approved=False
+        )
 
-    return JsonResponse({
-        "message": "User registered successfully. Waiting for admin approval."
-    }, status=201)
-from django.http import JsonResponse
-from accounts.models import UserProfile
+        return Response(
+            {"message": "User registered successfully. Waiting for admin approval."},
+            status=status.HTTP_201_CREATED
+        )
 
 
-def user_dashboard(request):
-    username = request.GET.get("username")
+# =========================
+# USER PROFILE (JWT)
+# =========================
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    if not username:
-        return JsonResponse({"error": "Username required"}, status=400)
+    def get(self, request):
+        profile = UserProfile.objects.get(user=request.user)
 
-    try:
-        profile = UserProfile.objects.get(user__username=username)
-
-        if not profile.approved:
-            return JsonResponse({
-                "approved": False,
-                "message": "Waiting for admin approval"
-            })
-
-        return JsonResponse({
-            "approved": True,
-            "username": profile.user.username,
+        return Response({
+            "username": request.user.username,
+            "approved": profile.approved,
             "goal": profile.goal,
-            # 🔑 THIS IS THE FIX
-            "trainer": profile.trainer.trainer_id if profile.trainer else None,
-            "message": "Approved"
+            "trainer": profile.trainer.trainer_id if profile.trainer else None
         })
 
-    except UserProfile.DoesNotExist:
-        return JsonResponse({"error": "User not found"}, status=404)
-from django.contrib.auth import authenticate
-from django.http import JsonResponse
-from accounts.models import UserProfile
-from django.views.decorators.csrf import csrf_exempt
+
+# =========================
+# ADMIN – CREATE TRAINER
+# =========================
+class CreateTrainerView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        username = request.data.get("username")
+        password = request.data.get("password")
+        trainer_id = request.data.get("trainer_id")
+
+        if not username or not password or not trainer_id:
+            return Response(
+                {"error": "Missing data"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            user = User.objects.get(username=username)
+            profile = UserProfile.objects.get(user=user)
+        except (User.DoesNotExist, UserProfile.DoesNotExist):
+            return Response(
+                {"error": "User not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        user.set_password(password)
+        user.save()
+
+        trainer, _ = Trainer.objects.update_or_create(
+            user=user,
+            defaults={"trainer_id": trainer_id}
+        )
+
+        profile.trainer = trainer
+        profile.approved = True
+        profile.save()
+
+        return Response(
+            {"message": "Trainer created successfully"},
+            status=status.HTTP_201_CREATED
+        )
 
 
-@csrf_exempt
-def user_login(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Method not allowed"}, status=405)
+# =========================
+# TRAINER – USERS LIST
+# =========================
+class TrainerUsersView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    username = request.POST.get("username")
-    password = request.POST.get("password")
+    def get(self, request):
+        trainer = Trainer.objects.get(user=request.user)
 
-    user = authenticate(username=username, password=password)
+        profiles = UserProfile.objects.filter(trainer=trainer, approved=True)
 
-    if user is None:
-        return JsonResponse({"error": "Invalid credentials"}, status=401)
+        users = [
+            {
+                "username": p.user.username,
+                "goal": p.goal,
+                "age": p.age
+            }
+            for p in profiles
+        ]
 
-    try:
-        profile = UserProfile.objects.get(user=user)
-    except UserProfile.DoesNotExist:
-        return JsonResponse({"error": "Profile not found"}, status=404)
+        return Response({"users": users})
 
-    if not profile.approved:
-        return JsonResponse({
-            "approved": False,
-            "message": "Waiting for admin approval"
-        })
 
-    return JsonResponse({
-        "approved": True,
-        "username": user.username,
-        "goal": profile.goal,
-        "message": "Login successful"
-    })
-@csrf_exempt
-def create_trainer(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Method not allowed"}, status=405)
+# =========================
+# TRAINER – ADD DAILY UPDATE
+# =========================
+class AddDailyUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    username = request.POST.get("username")
-    password = request.POST.get("password")
-    trainer_id = request.POST.get("trainer_id")
+    def post(self, request):
+        trainer = Trainer.objects.get(user=request.user)
 
-    if not username or not password or not trainer_id:
-        return JsonResponse({"error": "Missing data"}, status=400)
+        username = request.data.get("username")
+        date = request.data.get("date")
+        diet = request.data.get("diet")
+        attendance = request.data.get("attendance")
+        description = request.data.get("description")
 
-    try:
         user = User.objects.get(username=username)
-        profile = UserProfile.objects.get(user=user)
-    except (User.DoesNotExist, UserProfile.DoesNotExist):
-        return JsonResponse({"error": "User not found"}, status=404)
 
-    # 🔑 ALWAYS RESET PASSWORD (CRITICAL)
-    user.set_password(password)
-    user.save()
+        DailyUpdate.objects.create(
+            trainer=trainer,
+            user=user,
+            date=date,
+            diet=diet,
+            attendance=attendance,
+            description=description
+        )
 
-    # 🔑 FORCE TRAINER CREATION / UPDATE (NO get_or_create)
-    trainer, created = Trainer.objects.update_or_create(
-        user=user,
-        defaults={"trainer_id": trainer_id}
-    )
+        return Response(
+            {"message": "Daily update added"},
+            status=status.HTTP_201_CREATED
+        )
 
-    # 🔑 FORCE ASSIGNMENT
-    profile.trainer = trainer
-    profile.approved = True
-    profile.save()
 
-    return JsonResponse(
-        {"message": "Trainer created, updated, and assigned successfully"},
-        status=201
-    )
+# =========================
+# USER – VIEW UPDATES
+# =========================
+class UserUpdatesView(APIView):
+    permission_classes = [IsAuthenticated]
 
-def trainer_users(request):
-    trainer_username = request.GET.get("trainer")
+    def get(self, request):
+        updates = DailyUpdate.objects.filter(
+            user=request.user
+        ).order_by("-date")
 
-    if not trainer_username:
-        return JsonResponse({"error": "Trainer username required"}, status=400)
+        data = [
+            {
+                "date": u.date,
+                "diet": u.diet,
+                "attendance": u.attendance,
+                "description": u.description
+            }
+            for u in updates
+        ]
 
-    try:
-        trainer = Trainer.objects.get(user__username=trainer_username)
-    except Trainer.DoesNotExist:
-        return JsonResponse({"error": "Trainer not found"}, status=404)
+        present_days = updates.filter(attendance=True).count()
 
-    profiles = UserProfile.objects.filter(trainer=trainer)
-
-    users = []
-    for p in profiles:
-        users.append({
-            "username": p.user.username,
-            "goal": p.goal,
+        return Response({
+            "updates": data,
+            "present_days": present_days
         })
-
-    return JsonResponse({"users": users})
-from django.contrib.auth import authenticate
-from django.http import JsonResponse
-from .models import Trainer, UserProfile
-from django.views.decorators.csrf import csrf_exempt
-
-@csrf_exempt
-def trainer_login(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Method not allowed"}, status=405)
-
-    trainer_id = request.POST.get("trainer_id")
-    password = request.POST.get("password")
-
-    if not trainer_id or not password:
-        return JsonResponse({"error": "Missing credentials"}, status=400)
-
-    try:
-        trainer = Trainer.objects.get(trainer_id=trainer_id)
-    except Trainer.DoesNotExist:
-        return JsonResponse({"error": "Invalid trainer ID"}, status=401)
-
-    user = authenticate(
-        username=trainer.user.username,
-        password=password
-    )
-
-    if user is None:
-        return JsonResponse({"error": "Invalid password"}, status=401)
-
-    return JsonResponse({
-        "message": "Trainer login successful",
-        "trainer_id": trainer.trainer_id,
-        "username": user.username
-    })
-def trainer_dashboard(request):
-    trainer_id = request.GET.get("trainer_id")
-
-    if not trainer_id:
-        return JsonResponse({"error": "Trainer ID required"}, status=400)
-
-    try:
-        trainer = Trainer.objects.get(trainer_id=trainer_id)
-    except Trainer.DoesNotExist:
-        return JsonResponse({"error": "Trainer not found"}, status=404)
-
-    users = UserProfile.objects.filter(
-        trainer=trainer,
-        approved=True
-    )
-
-    data = []
-    for u in users:
-        data.append({
-            "username": u.user.username,
-            "age": u.age,
-            "goal": u.goal
-        })
-
-    return JsonResponse({"users": data})
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-from .models import Trainer, UserProfile, DailyUpdate
-from django.contrib.auth.models import User
-from datetime import datetime
-
-@csrf_exempt
-def add_daily_update(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Method not allowed"}, status=405)
-
-    trainer_id = request.POST.get("trainer_id")
-    username = request.POST.get("username")
-    date = request.POST.get("date")
-    diet = request.POST.get("diet")
-    attendance = request.POST.get("attendance")
-    description = request.POST.get("description")
-
-    try:
-        trainer = Trainer.objects.get(trainer_id=trainer_id)
-        user = User.objects.get(username=username)
-    except:
-        return JsonResponse({"error": "Invalid trainer or user"}, status=400)
-
-    DailyUpdate.objects.create(
-        trainer=trainer,
-        user=user,
-        date=date,
-        diet=diet,
-        attendance=True if attendance == "true" else False,
-        description=description
-    )
-
-    return JsonResponse({"message": "Daily update added"}, status=201)
-from django.db.models import Count
-
-def user_updates(request):
-    username = request.GET.get("username")
-
-    try:
-        user = User.objects.get(username=username)
-    except:
-        return JsonResponse({"error": "User not found"}, status=404)
-
-    updates = DailyUpdate.objects.filter(user=user).order_by("-date")
-
-    data = []
-    for u in updates:
-        data.append({
-            "date": u.date,
-            "diet": u.diet,
-            "attendance": u.attendance,
-            "description": u.description
-        })
-
-    monthly_count = updates.filter(attendance=True).count()
-
-    return JsonResponse({
-        "updates": data,
-        "present_days": monthly_count
-    })
