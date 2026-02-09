@@ -19,14 +19,12 @@ class RegisterUserView(APIView):
         username = data.get("username")
         password = data.get("password")
         age = data.get("age")
-        height = data.get("height")
-        weight = data.get("weight")
         goal = data.get("goal")
         gym_type = data.get("gym_type")
 
-        if not username or not password:
+        if not username or not password or not goal or not gym_type:
             return Response(
-                {"error": "Username and password are required"},
+                {"error": "username, password, goal, and gym_type are required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -44,11 +42,9 @@ class RegisterUserView(APIView):
         UserProfile.objects.create(
             user=user,
             age=age,
-            height=height,
-            weight=weight,
             goal=goal,
             gym_type=gym_type,
-            approved=False
+            approved=False   # ⬅ approval logic stays
         )
 
         return Response(
@@ -64,9 +60,9 @@ class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        try:
-            profile = UserProfile.objects.get(user=request.user)
-        except UserProfile.DoesNotExist:
+        profile = UserProfile.objects.filter(user=request.user).first()
+
+        if not profile:
             return Response(
                 {"error": "Profile not found"},
                 status=status.HTTP_404_NOT_FOUND
@@ -78,18 +74,19 @@ class UserProfileView(APIView):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        return Response({
-            "user": {
+        return Response(
+            {
                 "username": request.user.username,
                 "approved": profile.approved,
                 "goal": profile.goal,
                 "trainer": profile.trainer.trainer_id if profile.trainer else None
-            }
-        })
+            },
+            status=status.HTTP_200_OK
+        )
 
 
 # =========================
-# ADMIN – CREATE TRAINER
+# ADMIN – APPROVE USER + CREATE TRAINER
 # =========================
 class CreateTrainerView(APIView):
     permission_classes = [IsAuthenticated]
@@ -102,28 +99,24 @@ class CreateTrainerView(APIView):
             )
 
         username = request.data.get("username")
-        password = request.data.get("password")
         trainer_id = request.data.get("trainer_id")
 
-        if not username or not password or not trainer_id:
+        if not username or not trainer_id:
             return Response(
-                {"error": "All fields are required"},
+                {"error": "username and trainer_id are required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        try:
-            user = User.objects.get(username=username)
-            profile = UserProfile.objects.get(user=user)
-        except (User.DoesNotExist, UserProfile.DoesNotExist):
+        user = User.objects.filter(username=username).first()
+        profile = UserProfile.objects.filter(user=user).first()
+
+        if not user or not profile:
             return Response(
                 {"error": "User not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        user.set_password(password)
-        user.save()
-
-        trainer, _ = Trainer.objects.update_or_create(
+        trainer, _ = Trainer.objects.get_or_create(
             user=user,
             defaults={"trainer_id": trainer_id}
         )
@@ -133,8 +126,8 @@ class CreateTrainerView(APIView):
         profile.save()
 
         return Response(
-            {"message": "Trainer created and user approved"},
-            status=status.HTTP_201_CREATED
+            {"message": "User approved and trainer created"},
+            status=status.HTTP_200_OK
         )
 
 
@@ -145,29 +138,27 @@ class TrainerUsersView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        try:
-            trainer = Trainer.objects.get(user=request.user)
-        except Trainer.DoesNotExist:
+        trainer = Trainer.objects.filter(user=request.user).first()
+
+        if not trainer:
             return Response(
                 {"error": "You are not a trainer"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        profiles = UserProfile.objects.filter(
-            trainer=trainer,
-            approved=True
+        profiles = UserProfile.objects.filter(trainer=trainer, approved=True)
+
+        return Response(
+            [
+                {
+                    "username": p.user.username,
+                    "goal": p.goal,
+                    "age": p.age
+                }
+                for p in profiles
+            ],
+            status=status.HTTP_200_OK
         )
-
-        users = [
-            {
-                "username": p.user.username,
-                "goal": p.goal,
-                "age": p.age
-            }
-            for p in profiles
-        ]
-
-        return Response({"users": users})
 
 
 # =========================
@@ -177,9 +168,9 @@ class AddDailyUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        try:
-            trainer = Trainer.objects.get(user=request.user)
-        except Trainer.DoesNotExist:
+        trainer = Trainer.objects.filter(user=request.user).first()
+
+        if not trainer:
             return Response(
                 {"error": "You are not a trainer"},
                 status=status.HTTP_403_FORBIDDEN
@@ -187,30 +178,24 @@ class AddDailyUpdateView(APIView):
 
         username = request.data.get("username")
         date = request.data.get("date")
-        diet = request.data.get("diet")
+        diet = request.data.get("diet", "")
         attendance = request.data.get("attendance")
-        description = request.data.get("description")
+        description = request.data.get("description", "")
 
-        if not username or date is None or attendance is None:
+        if not username or not date or attendance is None:
             return Response(
-                {"error": "Missing required fields"},
+                {"error": "username, date, attendance required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        if attendance not in [True, False]:
-            return Response(
-                {"error": "Attendance must be true or false"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        user = User.objects.filter(username=username).first()
+        profile = UserProfile.objects.filter(
+            user=user,
+            trainer=trainer,
+            approved=True
+        ).first()
 
-        try:
-            user = User.objects.get(username=username)
-            UserProfile.objects.get(
-                user=user,
-                trainer=trainer,
-                approved=True
-            )
-        except (User.DoesNotExist, UserProfile.DoesNotExist):
+        if not profile:
             return Response(
                 {"error": "User not assigned to you"},
                 status=status.HTTP_403_FORBIDDEN
@@ -226,7 +211,7 @@ class AddDailyUpdateView(APIView):
         )
 
         return Response(
-            {"message": "Daily update added successfully"},
+            {"message": "Daily update added"},
             status=status.HTTP_201_CREATED
         )
 
@@ -242,19 +227,18 @@ class UserUpdatesView(APIView):
             user=request.user
         ).order_by("-date")
 
-        data = [
+        return Response(
             {
-                "date": u.date,
-                "diet": u.diet,
-                "attendance": u.attendance,
-                "description": u.description
-            }
-            for u in updates
-        ]
-
-        present_days = updates.filter(attendance=True).count()
-
-        return Response({
-            "updates": data,
-            "present_days": present_days
-        })
+                "updates": [
+                    {
+                        "date": u.date,
+                        "diet": u.diet,
+                        "attendance": u.attendance,
+                        "description": u.description
+                    }
+                    for u in updates
+                ],
+                "present_days": updates.filter(attendance=True).count()
+            },
+            status=status.HTTP_200_OK
+        )

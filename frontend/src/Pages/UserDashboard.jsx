@@ -3,33 +3,47 @@ import api from "../Api/Axios";
 import NavbarUser from "../Components/NavbarUser";
 import Footer from "../Components/Footer";
 import "../Styles/Layout.css";
-import "../Styles/UserAdding.css"; // our new CSS
+import "../Styles/UserAdding.css";
 
 function UserDashboard() {
   const [data, setData] = useState(null);
   const [updates, setUpdates] = useState([]);
   const [presentDays, setPresentDays] = useState(0);
-
-  const username = localStorage.getItem("username");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Existing dashboard API
-    api.get(`/api/accounts/dashboard/?username=${username}`)
-      .then((res) => setData(res.data))
-      .catch(() => alert("Failed to load dashboard"));
+    // ✅ Fetch user profile (JWT based)
+    api.get("/api/accounts/profile/")
+      .then((res) => {
+        setData(res.data);
+      })
+      .catch((err) => {
+        if (err.response?.status === 403) {
+          alert("Your account is not approved yet");
+        } else if (err.response?.status === 401) {
+          alert("Session expired. Please login again.");
+          localStorage.clear();
+          window.location.href = "/login";
+        } else {
+          alert("Failed to load profile");
+        }
+      });
 
-    // Fetch daily updates
-    api.get(`/api/accounts/user/updates/?username=${username}`)
+    // ✅ Fetch daily updates (JWT based)
+    api.get("/api/accounts/user/updates/")
       .then((res) => {
         setUpdates(res.data.updates || []);
         setPresentDays(res.data.present_days || 0);
       })
-      .catch(() => console.log("No daily updates yet"));
-  }, [username]);
+      .catch(() => {
+        console.log("No daily updates yet");
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
-  if (!data) return <p className="loading-text">Loading...</p>;
+  if (loading) return <p className="loading-text">Loading...</p>;
+  if (!data) return null;
 
-  // Example static gym images for carousel (you can later replace with API)
   const gymImages = [
     "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200",
     "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=1200",
@@ -42,7 +56,7 @@ function UserDashboard() {
 
       <div className="page-content">
 
-        {/* Hero Gym Carousel */}
+        {/* Hero Carousel */}
         <div className="hero-carousel">
           {gymImages.map((img, i) => (
             <div key={i} className="hero-slide">
@@ -57,21 +71,24 @@ function UserDashboard() {
 
         {!data.approved ? (
           <div className="card warning-card">
-            <p>{data.message}</p>
+            <p>Your account is waiting for admin approval.</p>
           </div>
         ) : (
           <div className="dashboard-grid">
 
-            {/* User Info Card */}
+            {/* Profile Card */}
             <div className="card info-card">
               <h3>Profile</h3>
               <p><b>Username:</b> {data.username}</p>
               <p><b>Goal:</b> {data.goal}</p>
-              <p><b>Status:</b> <span className="status-approved">Approved</span></p>
+              <p>
+                <b>Status:</b>{" "}
+                <span className="status-approved">Approved</span>
+              </p>
               <p><b>Trainer:</b> {data.trainer || "Not assigned yet"}</p>
             </div>
 
-            {/* Monthly Summary Card */}
+            {/* Attendance Card */}
             <div className="card stats-card">
               <h3>Monthly Attendance</h3>
               <div className="stat-item">
@@ -80,9 +97,10 @@ function UserDashboard() {
               </div>
             </div>
 
-            {/* Daily Updates Card */}
+            {/* Daily Updates */}
             <div className="card updates-card">
               <h3>Daily Updates</h3>
+
               {updates.length === 0 ? (
                 <p className="empty-text">No daily updates yet</p>
               ) : (
@@ -91,7 +109,10 @@ function UserDashboard() {
                     <div key={i} className="update-item">
                       <p><b>Date:</b> {u.date}</p>
                       <p><b>Diet:</b> {u.diet}</p>
-                      <p><b>Attendance:</b> {u.attendance ? "Present" : "Absent"}</p>
+                      <p>
+                        <b>Attendance:</b>{" "}
+                        {u.attendance ? "Present" : "Absent"}
+                      </p>
                       <p><b>Notes:</b> {u.description}</p>
                     </div>
                   ))}

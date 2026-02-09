@@ -1,56 +1,77 @@
-/* src/Pages/MainPage.css */
+/* ================================
+   MAIN PAGE LAYOUT (ROOT)
+   ================================ */
 
-/* Only styles under .mainpage-layout */
 .mainpage-layout {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  font-family: "Segoe UI", system-ui, -apple-system;
+  transition: background 0.4s ease, color 0.4s ease;
+  background-size: 400% 400%;
+  animation: gradientMove 14s ease infinite;
 }
 
+/* ================================
+   COLORFUL THEME VARIABLES
+   ================================ */
+
 .mainpage-layout.light {
-  --bg: #f5f7fa;
-  --text: #222;
-  --card-bg: #fff;
-  --nav-bg: #fff;
-  --sidebar-bg: #f0f4f8;
-  --btn-bg: #007bff;
-  --btn-hover: #0056b3;
-  --border: #ddd;
+  --bg: linear-gradient(135deg, #fdfbfb, #ebedee, #fce7f3);
+  --text: #0f172a;
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --nav-bg: rgba(255, 255, 255, 0.8);
+  --sidebar-bg: linear-gradient(180deg, #e0e7ff, #fdf2f8);
+  --btn-bg: #ec4899;
+  --btn-hover: #8b5cf6;
+  --border: rgba(0, 0, 0, 0.12);
 }
 
 .mainpage-layout.dark {
-  --bg: #121212;
-  --text: #eee;
-  --card-bg: #1e1e1e;
-  --nav-bg: #1a1a1a;
-  --sidebar-bg: #222;
-  --btn-bg: #0d6efd;
-  --btn-hover: #0b5ed7;
-  --border: #444;
+  --bg: linear-gradient(135deg, #020617, #020617, #1e293b, #312e81);
+  --text: #e5e7eb;
+  --card-bg: rgba(30, 41, 59, 0.85);
+  --nav-bg: rgba(2, 6, 23, 0.85);
+  --sidebar-bg: linear-gradient(180deg, #020617, #1e293b);
+  --btn-bg: #22d3ee;
+  --btn-hover: #6366f1;
+  --border: rgba(255, 255, 255, 0.15);
 }
 
-.mainpage-layout body,
-.mainpage-layout html {
-  height: auto;
+.mainpage-layout {
+  background: var(--bg);
+  color: var(--text);
 }
+
+/* ================================
+   NAVBAR
+   ================================ */
 
 .mainpage-layout .navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background-color: var(--nav-bg);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: var(--nav-bg);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   position: sticky;
   top: 0;
   z-index: 1000;
+  animation: slideDown 0.6s ease;
 }
 
 .mainpage-layout .logo {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--btn-bg);
+  font-size: 1.7rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #22d3ee, #ec4899, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
+
+/* ================================
+   NAV RIGHT
+   ================================ */
 
 .mainpage-layout .nav-right {
   display: flex;
@@ -59,117 +80,147 @@
 }
 
 .mainpage-layout .theme-toggle {
-  background: none;
+  background: transparent;
   border: 1px solid var(--border);
-  padding: 0.5rem 0.8rem;
-  border-radius: 8px;
+  padding: 0.55rem 0.9rem;
+  border-radius: 12px;
   cursor: pointer;
-  font-size: 1rem;
   color: var(--text);
+  transition: all 0.3s ease;
 }
+
+.mainpage-layout .theme-toggle:hover {
+  background: linear-gradient(135deg, var(--btn-bg), var(--btn-hover));
+  color: #fff;
+  box-shadow: 0 0 18px rgba(99, 102, 241, 0.6);
+}
+
+/* ================================
+   PROFILE DROPDOWN
+   ================================ */
 
 .mainpage-layout .profile-toggle {
   position: relative;
 }
 
 .mainpage-layout .profile-btn {
-  background-color: var(--btn-bg);
-  color: white;
+  background: linear-gradient(135deg, var(--btn-bg), var(--btn-hover));
+  color: #ffffff;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
+  padding: 0.55rem 1.3rem;
+  border-radius: 999px;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-weight: 700;
+  position: relative;
+  box-shadow: 0 10px 28px rgba(99, 102, 241, 0.55);
+  transition: all 0.3s ease;
+}
+
+.mainpage-layout .profile-btn::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  background: linear-gradient(135deg, #22d3ee, #ec4899, #8b5cf6);
+  border-radius: inherit;
+  filter: blur(14px);
+  opacity: 0.7;
+  z-index: -1;
+}
+
+.mainpage-layout .profile-btn:hover {
+  transform: translateY(-3px);
 }
 
 .mainpage-layout .profile-dropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 12px);
   right: 0;
-  background-color: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: var(--card-bg);
+  border-radius: 16px;
   overflow: hidden;
-  min-width: 160px;
-  z-index: 1001;
+  min-width: 180px;
+  border: 1px solid var(--border);
+  animation: fadeScale 0.3s ease;
 }
 
 .mainpage-layout .profile-dropdown a {
   display: block;
-  padding: 0.7rem 1rem;
+  padding: 0.9rem 1.2rem;
   color: var(--text);
   text-decoration: none;
-  font-size: 0.9rem;
+  transition: background 0.25s ease;
 }
 
 .mainpage-layout .profile-dropdown a:hover {
-  background-color: var(--sidebar-bg);
+  background: linear-gradient(135deg, var(--btn-bg), var(--btn-hover));
+  color: #fff;
 }
+
+/* ================================
+   MAIN LAYOUT
+   ================================ */
 
 .mainpage-layout .main-layout {
   display: flex;
   flex: 1;
-  min-height: 0;
 }
+
+/* ================================
+   SIDEBAR
+   ================================ */
 
 .mainpage-layout .sidebar {
-  width: 220px;
-  background-color: var(--sidebar-bg);
+  width: 240px;
+  background: var(--sidebar-bg);
   border-right: 1px solid var(--border);
   padding: 1.5rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-}
-
-.mainpage-layout .sidebar-links {
-  list-style: none;
+  animation: slideLeft 0.6s ease;
 }
 
 .mainpage-layout .sidebar-btn {
   display: block;
-  padding: 0.8rem 1rem;
-  border-radius: 8px;
-  text-decoration: none;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
   color: var(--text);
-  font-weight: 500;
-  transition: background-color 0.2s;
-  text-align: left;
-  border: none;
   background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .mainpage-layout .sidebar-btn:hover {
-  background-color: var(--bg);
+  background: linear-gradient(135deg, var(--btn-bg), var(--btn-hover));
+  color: #fff;
+  transform: translateX(6px);
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.6);
 }
+
+/* ================================
+   MAIN CONTENT
+   ================================ */
 
 .mainpage-layout .main-content {
   flex: 1;
-  padding: 2rem;
-  overflow-y: auto;
-  background-image: url("https://images.unsplash.com/photo-1571902943202-507ec2618e8f?auto=format&fit=crop&q=80");
+  padding: 2.8rem;
+  background-image: url("https://static.vecteezy.com/system/resources/previews/037/228/250/large_2x/ai-generated-a-gym-with-dark-exercise-equipment-free-photo.jpg");
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
-  color: white;
+  color: #ffffff;
   position: relative;
+  animation: fadeIn 0.8s ease;
 }
 
 .mainpage-layout .main-content::before {
   content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: linear-gradient(
     135deg,
-    rgba(0, 0, 0, 0.8) 0%,
-    rgba(0, 0, 0, 0.5) 50%,
-    rgba(0, 0, 0, 0.3) 100%
+    rgba(0, 0, 0, 0.85),
+    rgba(0, 0, 0, 0.55),
+    rgba(0, 0, 0, 0.35)
   );
-  z-index: 0;
 }
 
 .mainpage-layout .main-content > * {
@@ -177,122 +228,129 @@
   z-index: 1;
 }
 
+/* ================================
+   HERO
+   ================================ */
+
 .mainpage-layout .gym-hero {
-  max-width: 700px;
+  max-width: 720px;
   margin-bottom: 3rem;
+  animation: slideUp 0.8s ease;
 }
 
 .mainpage-layout .gym-hero h2 {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-  font-weight: 700;
-}
-
-.mainpage-layout .gym-hero p {
-  font-size: 1.1rem;
-  margin-bottom: 1.5rem;
-  opacity: 0.95;
+  font-size: 2.8rem;
+  font-weight: 900;
 }
 
 .mainpage-layout .hero-cta {
   display: inline-block;
-  background-color: var(--btn-bg);
-  color: white;
-  padding: 0.8rem 1.8rem;
-  border-radius: 50px;
+  margin-top: 1.4rem;
+  padding: 0.9rem 2.2rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--btn-bg), var(--btn-hover));
+  color: #fff;
+  font-weight: 800;
   text-decoration: none;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
-  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
 }
 
-.mainpage-layout .hero-cta:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 123, 255, 0.4);
+.mainpage-layout .hero-cta::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  background: linear-gradient(135deg, #22d3ee, #ec4899, #8b5cf6);
+  filter: blur(16px);
+  opacity: 0.7;
+  z-index: -1;
 }
+
+/* ================================
+   FEATURES
+   ================================ */
 
 .mainpage-layout .gym-features {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-top: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.8rem;
 }
 
 .mainpage-layout .feature-card {
-  background-color: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 1.7rem;
+  border-radius: 20px;
+  background: linear-gradient(
+    135deg,
+    rgba(34, 211, 238, 0.25),
+    rgba(236, 72, 153, 0.25)
+  );
+  backdrop-filter: blur(16px);
+  transition: all 0.35s ease;
 }
 
-.mainpage-layout .feature-card h3 {
-  font-size: 1.2rem;
-  margin-bottom: 0.5rem;
-  color: white;
+.mainpage-layout .feature-card:hover {
+  transform: translateY(-8px);
+  background: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.45),
+    rgba(236, 72, 153, 0.45)
+  );
 }
 
-.mainpage-layout .feature-card p {
-  font-size: 0.95rem;
-  opacity: 0.9;
-}
+/* ================================
+   FOOTER
+   ================================ */
 
 .mainpage-layout .footer {
-  padding: 1.5rem 2rem;
-  background-color: var(--nav-bg);
-  border-top: 1px solid var(--border);
+  padding: 1.5rem;
+  background: var(--nav-bg);
   text-align: center;
   font-size: 0.9rem;
 }
 
-.mainpage-layout .footer p {
-  margin-bottom: 0.5rem;
-}
+/* ================================
+   RESPONSIVE
+   ================================ */
 
-.mainpage-layout .footer a {
-  color: var(--btn-bg);
-  text-decoration: none;
-  margin: 0 0.5rem;
-}
-
-.mainpage-layout .footer a:hover {
-  text-decoration: underline;
-}
-
-/* Responsive */
 @media (max-width: 900px) {
   .mainpage-layout .main-layout {
     flex-direction: column;
   }
-
   .mainpage-layout .sidebar {
     width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .mainpage-layout .gym-hero h2 {
-    font-size: 2rem;
   }
 }
 
-@media (max-width: 600px) {
-  .mainpage-layout .navbar {
-    flex-direction: column;
-    gap: 0.8rem;
-    padding: 1rem;
-  }
+/* ================================
+   ANIMATIONS
+   ================================ */
 
-  .mainpage-layout .nav-right {
-    width: 100%;
-    justify-content: space-between;
-  }
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
 
-  .mainpage-layout .gym-hero h2 {
-    font-size: 1.7rem;
-  }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 
-  .mainpage-layout .gym-features {
-    grid-template-columns: 1fr;
-  }
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideLeft {
+  from { transform: translateX(-40px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeScale {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }

@@ -1,49 +1,128 @@
-/* ===== RESET ===== */
+/* ================================
+   RESET & BASE
+   ================================ */
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-/* ===== APP WRAPPER ===== */
+html, body {
+  height: 100%;
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont;
+  background: linear-gradient(
+    135deg,
+    #0f2027,
+    #203a43,
+    #2c5364
+  );
+  background-size: 400% 400%;
+  animation: gradientMove 14s ease infinite;
+}
+
+/* ================================
+   APP WRAPPER
+   ================================ */
+
 .app-container {
   min-height: 100vh;
   width: 100%;
   display: flex;
   flex-direction: column;
+  animation: fadeIn 0.8s ease;
 }
 
-/* ===== NAVBAR ===== */
+/* ================================
+   NAVBAR
+   ================================ */
+
 .navbar {
-  height: 60px;
+  height: 64px;
   width: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
-/* ===== MAIN AREA ===== */
+/* ================================
+   MAIN AREA
+   ================================ */
+
 .main-content {
   flex: 1;
   display: flex;
   width: 100%;
+  padding: 20px;
+  gap: 20px;
+  animation: slideUp 0.7s ease;
 }
 
-/* ===== SIDEBAR ===== */
+/* ================================
+   SIDEBAR (GLASS STYLE)
+   ================================ */
+
 .sidebar {
-  width: 220px;
+  width: 240px;
   min-height: 100%;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 16px;
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
 }
 
-/* ===== PAGE CONTENT (FULL PAGE) ===== */
+/* hover lift */
+.sidebar:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 30px 55px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* ================================
+   PAGE CONTENT (GLASS CARD)
+   ================================ */
+
 .page-content {
   flex: 1;
   width: 100%;
   min-height: 100%;
-  padding: 20px;
+  padding: 28px;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 18px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 25px 45px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  animation: slideUp 0.8s ease forwards;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
 }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
+/* hover depth */
+.page-content:hover {
+  transform: translateY(-6px);
+  box-shadow:
+    0 35px 65px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+/* ================================
+   RESPONSIVE
+   ================================ */
+
+@media (max-width: 900px) {
   .main-content {
     flex-direction: column;
+    padding: 16px;
   }
 
   .sidebar {
@@ -51,6 +130,53 @@
   }
 
   .page-content {
-    width: 100%;
+    padding: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar {
+    height: 56px;
+  }
+
+  .page-content {
+    padding: 18px;
+    border-radius: 14px;
+  }
+}
+
+/* ================================
+   ANIMATIONS
+   ================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(35px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }

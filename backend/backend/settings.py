@@ -53,12 +53,16 @@ INSTALLED_APPS = [
 # ===== CORS & CSRF (FINAL, CORRECT) =====
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
+    # "http://localhost:5173",
     r"^https://.*\.vercel\.app$",
 ]
+CORS_ALLOW_ALL_ORIGINS = True
+
 
 CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGIN_REGEXES = [
+    # "http://localhost:5173",
     r"^https://.*\.vercel\.app$",
 ]
 
@@ -72,7 +76,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG") == "True"
 
 MIDDLEWARE = [
-     'corsheaders.middleware.CorsMiddleware', 
+    'corsheaders.middleware.CorsMiddleware', 
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -126,7 +130,7 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 #aiven_original
 
-import os
+# import os
 
 SSL_CA = os.getenv("MYSQL_SSL_CA")
 
